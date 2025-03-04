@@ -368,32 +368,121 @@ function group(array, keySelector, valueSelector) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  combination: '',
+  elementUsed: false,
+  idUsed: false,
+  classUsed: false,
+  attrUsed: false,
+  pseudoClassUsed: false,
+  pseudoElemUsed: false,
+  lastAddedElement: '',
+  elemName: '',
+  element(value) {
+    if (this.elementUsed) {
+      throw new Error(
+        'Element should not occur more then one time inside the selector'
+      );
+    }
+    if (
+      this.idUsed ||
+      this.classUsed ||
+      this.attrUsed ||
+      this.pseudoClassUsed ||
+      this.pseudoElemUsed
+    ) {
+      throw new Error('Element must be used at the start of the selector');
+    }
+    this.combination += `${value}`;
+    this.elemName = `${value}`;
+    this.elementUsed = true;
+    this.lastAddedElement = 'element';
+    return this;
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    if (this.idUsed) {
+      if (this.lastAddedElement !== 'element' && this.lastAddedElement !== '') {
+        throw new Error(
+          'Id should not occur more then one time inside the selector'
+        );
+      }
+    }
+    this.combination += `#${value}`;
+    this.idUsed = true;
+    this.lastAddedElement = 'id';
+    return this;
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    if (
+      this.lastAddedElement !== 'id' &&
+      this.lastAddedElement !== 'class' &&
+      this.lastAddedElement !== 'element' &&
+      this.lastAddedElement !== ''
+    )
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    this.combination += `.${value}`;
+    this.classUsed = true;
+    this.lastAddedElement = 'class';
+    return this;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    if (
+      this.lastAddedElement !== 'class' &&
+      this.lastAddedElement !== 'attribute'
+    )
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    this.combination += `[${value}]`;
+    this.attrUsed = true;
+    this.lastAddedElement = 'attribute';
+    return this;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    if (
+      this.lastAddedElement !== 'attribute' &&
+      this.lastAddedElement !== 'pseudoClass'
+    )
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    this.combination += `:${value}`;
+    this.pseudoClassUsed = true;
+    this.lastAddedElement = 'pseudoClass';
+    return this;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    if (this.lastAddedElement !== 'pseudoClass')
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    if (this.pseudoElemUsed) {
+      throw new Error(
+        'Pseudo-element should not occur more then one time inside the selector'
+      );
+    }
+    this.combination += `::${value}`;
+    this.pseudoElemUsed = true;
+    this.lastAddedElement = 'pseudoElement';
+    return this;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    this.combination += `${selector1}${combinator}${selector2}`;
+    return this;
+  },
+
+  stringify() {
+    if (this.elementUsed && this.idUsed) {
+      return this.combination.replace(this.elemName, '');
+    }
+    return this.combination;
   },
 };
 
