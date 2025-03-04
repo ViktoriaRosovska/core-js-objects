@@ -17,8 +17,8 @@
  *    shallowCopy({a: 2, b: { a: [1, 2, 3]}}) => {a: 2, b: { a: [1, 2, 3]}}
  *    shallowCopy({}) => {}
  */
-function shallowCopy(/* obj */) {
-  throw new Error('Not implemented');
+function shallowCopy(obj) {
+  return { ...Object.assign(obj) };
 }
 
 /**
@@ -32,8 +32,20 @@ function shallowCopy(/* obj */) {
  *    mergeObjects([{a: 1, b: 2}, {b: 3, c: 5}]) => {a: 1, b: 5, c: 5}
  *    mergeObjects([]) => {}
  */
-function mergeObjects(/* objects */) {
-  throw new Error('Not implemented');
+function mergeObjects(objects) {
+  const map = new Map();
+  for (let i = 0; i < objects.length; i += 1) {
+    const entries = Object.entries(objects[i]);
+    for (let j = 0; j < entries.length; j += 1) {
+      const [key, value] = entries[j];
+      if (map.has(key)) {
+        map.set(key, value + map.get(key));
+      } else {
+        map.set(key, value);
+      }
+    }
+  }
+  return Object.fromEntries(map);
 }
 
 /**
@@ -49,8 +61,12 @@ function mergeObjects(/* objects */) {
  *    removeProperties({name: 'John', age: 30, city: 'New York'}, ['age']) => {name: 'John', city: 'New York'}
  *
  */
-function removeProperties(/* obj, keys */) {
-  throw new Error('Not implemented');
+function removeProperties(obj, keys) {
+  const map = new Map(Object.entries(obj));
+  for (let i = 0; i < keys.length; i += 1) {
+    map.delete(keys[i]);
+  }
+  return Object.fromEntries(map);
 }
 
 /**
@@ -65,8 +81,18 @@ function removeProperties(/* obj, keys */) {
  *    compareObjects({a: 1, b: 2}, {a: 1, b: 2}) => true
  *    compareObjects({a: 1, b: 2}, {a: 1, b: 3}) => false
  */
-function compareObjects(/* obj1, obj2 */) {
-  throw new Error('Not implemented');
+function compareObjects(obj1, obj2) {
+  const entries = Object.entries(obj1);
+  const entries2 = Object.entries(obj2);
+  if (entries.length !== entries2.length) return false;
+  for (let i = 0; i < entries.length; i += 1) {
+    const [key, value] = entries[i];
+    const [key2, value2] = entries2[i];
+    if (key !== key2 || value !== value2) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /**
