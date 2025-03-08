@@ -367,125 +367,142 @@ function group(array, keySelector, valueSelector) {
  *  For more examples see unit tests.
  */
 
-const cssSelectorBuilder = {
-  combination: '',
-  elementUsed: false,
-  idUsed: false,
-  classUsed: false,
-  attrUsed: false,
-  pseudoClassUsed: false,
-  pseudoElemUsed: false,
-  lastAddedElement: '',
-  elemName: '',
+class CSSBuilder {
+  constructor() {
+    this.combination = '';
+    this.hasElement = false;
+    this.hasId = false;
+    this.hasPseudoElement = false;
+    this.allowed = [
+      'element',
+      'id',
+      'class',
+      'attribute',
+      'pseudo-class',
+      'pseudo-element',
+    ];
+  }
+
   element(value) {
-    if (this.elementUsed) {
+    if (!this.allowed.includes('element')) {
       throw new Error(
-        'Element should not occur more then one time inside the selector'
+        this.hasElement
+          ? 'Element, id and pseudo-element should not occur more then one time inside the selector'
+          : 'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
       );
-    }
-    if (
-      this.idUsed ||
-      this.classUsed ||
-      this.attrUsed ||
-      this.pseudoClassUsed ||
-      this.pseudoElemUsed
-    ) {
-      throw new Error('Element must be used at the start of the selector');
     }
     this.combination += `${value}`;
-    this.elemName = `${value}`;
-    this.elementUsed = true;
-    this.lastAddedElement = 'element';
+    this.hasElement = true;
+    this.allowed = [
+      'id',
+      'class',
+      'attribute',
+      'pseudo-class',
+      'pseudo-element',
+    ];
     return this;
-  },
+  }
 
   id(value) {
-    if (this.idUsed) {
-      if (this.lastAddedElement !== 'element' && this.lastAddedElement !== '') {
-        throw new Error(
-          'Id should not occur more then one time inside the selector'
-        );
-      }
+    if (!this.allowed.includes('id')) {
+      throw new Error(
+        this.hasId
+          ? 'Element, id and pseudo-element should not occur more then one time inside the selector'
+          : 'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
     }
     this.combination += `#${value}`;
-    this.idUsed = true;
-    this.lastAddedElement = 'id';
+    this.hasId = true;
+    this.allowed = ['class', 'attribute', 'pseudo-class', 'pseudo-element'];
     return this;
-  },
+  }
 
   class(value) {
-    if (
-      this.lastAddedElement !== 'id' &&
-      this.lastAddedElement !== 'class' &&
-      this.lastAddedElement !== 'element' &&
-      this.lastAddedElement !== ''
-    )
+    if (!this.allowed.includes('class')) {
       throw new Error(
         'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
       );
+    }
     this.combination += `.${value}`;
-    this.classUsed = true;
-    this.lastAddedElement = 'class';
+    this.allowed = ['class', 'attribute', 'pseudo-class', 'pseudo-element'];
     return this;
-  },
+  }
 
   attr(value) {
-    if (
-      this.lastAddedElement !== 'class' &&
-      this.lastAddedElement !== 'attribute'
-    )
+    if (!this.allowed.includes('attribute')) {
       throw new Error(
         'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
       );
+    }
     this.combination += `[${value}]`;
-    this.attrUsed = true;
-    this.lastAddedElement = 'attribute';
+    this.allowed = ['attribute', 'pseudo-class', 'pseudo-element'];
     return this;
-  },
+  }
 
   pseudoClass(value) {
-    if (
-      this.lastAddedElement !== 'attribute' &&
-      this.lastAddedElement !== 'pseudoClass'
-    )
+    if (!this.allowed.includes('pseudo-class')) {
       throw new Error(
         'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
       );
+    }
     this.combination += `:${value}`;
-    this.pseudoClassUsed = true;
-    this.lastAddedElement = 'pseudoClass';
+    this.allowed = ['pseudo-class', 'pseudo-element'];
     return this;
-  },
+  }
 
   pseudoElement(value) {
-    if (this.lastAddedElement !== 'pseudoClass')
+    if (!this.allowed.includes('pseudo-element')) {
       throw new Error(
-        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
-      );
-    if (this.pseudoElemUsed) {
-      throw new Error(
-        'Pseudo-element should not occur more then one time inside the selector'
+        this.hasPseudoElement
+          ? 'Element, id and pseudo-element should not occur more then one time inside the selector'
+          : 'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
       );
     }
     this.combination += `::${value}`;
-    this.pseudoElemUsed = true;
-    this.lastAddedElement = 'pseudoElement';
+    this.hasPseudoElement = true;
+    this.allowed = [];
     return this;
+  }
+
+  stringify() {
+    const result = this.combination;
+    return result;
+  }
+}
+
+const cssSelectorBuilder = {
+  element(value) {
+    return new CSSBuilder().element(value);
+  },
+
+  id(value) {
+    return new CSSBuilder().id(value);
+  },
+
+  class(value) {
+    return new CSSBuilder().class(value);
+  },
+
+  attr(value) {
+    return new CSSBuilder().attr(value);
+  },
+
+  pseudoClass(value) {
+    return new CSSBuilder().pseudoClass(value);
+  },
+
+  pseudoElement(value) {
+    return new CSSBuilder().pseudoElement(value);
   },
 
   combine(selector1, combinator, selector2) {
-    this.combination += `${selector1}${combinator}${selector2}`;
-    return this;
-  },
-
-  stringify() {
-    if (this.elementUsed && this.idUsed) {
-      return this.combination.replace(this.elemName, '');
-    }
-    return this.combination;
+    return {
+      stringify() {
+        return `${selector1.stringify()} ${combinator} ${selector2.stringify()}`;
+      },
+    };
   },
 };
-
 module.exports = {
   shallowCopy,
   mergeObjects,
